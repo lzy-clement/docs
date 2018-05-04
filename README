@@ -1,4 +1,4 @@
-Installed Packages:
+### Installed Packages:
 ex-mode
 git-plus
 language-markdown
@@ -8,4 +8,4 @@ markdown-scroll-sync
 markdown-table-editor
 markdown-writer
 pretty-json
-platformio-ide-terminal
+platformio-ide-terminal  
