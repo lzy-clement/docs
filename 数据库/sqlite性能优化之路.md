@@ -6,4 +6,4 @@ sqlite作为内嵌式数据库，具有轻量级的特点。本身实现了自�
 首先我们看下图，通过rabbitmq的监控图表来展现
 ![使用sqlite导致尖刺问题](pic/sqlite.png)
 
-### sqllite 锁机制
+### sqlite作为内嵌式数据库
