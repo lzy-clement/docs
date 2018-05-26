@@ -32,5 +32,7 @@
   mbb.get(new byte[test.getBytes().size()]);
   ........
 ```
+https://blog.csdn.net/wujumei1962/article/details/42919383
 
+https://www.ibm.com/developerworks/cn/java/j-lo-javasecurity/
 至此
