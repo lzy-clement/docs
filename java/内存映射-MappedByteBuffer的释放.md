@@ -3,7 +3,6 @@
 
 既然使用到了内存映射，在Java中，就不得不认识一下MappedByteBuffer了。
 
-
 ## MappedByteBuffer
 我们先用最简单的例子来看看 MappedByteBuffer 的使用：
 
@@ -32,7 +31,54 @@
   mbb.get(new byte[test.getBytes().size()]);
   ........
 ```
-https://blog.csdn.net/wujumei1962/article/details/42919383
+至此一个简单的Java通过内存操作文件的例子就完成了。但是可以看到上面的程序并没有关闭资源。这简单，加上关闭代码就好了
+```
+  // 将内存中内容刷盘
+  mbb.force();
+  // 关闭资源
+  fc.close();
+  raf.close();
+```
+很简单的代码。但是仅仅认为就这样就真的too young too simple了。
 
-https://www.ibm.com/developerworks/cn/java/j-lo-javasecurity/
-至此
+你会发现在你关闭了所有资源以后，程序还是占用着文件没有释放。即使你将mbb，fc，raf都设置为空，一样无济于事。。。这就有点尴尬了。如果程序中要定时删除对应过期的文件，由于这一直持有其文件句柄，我还无法删除了。
+
+找了很多资料，发现这个Java关于mmap的一个[bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154)。由于FileChannel调用了map方法做内存映射，但是没提供对应的unmap方法释放内存，导致内存一直占用该文件。实际unmap方法在FileChannelImpl中私有方法中，在finalize时，unmap无法调用导致内存没释放。
+
+同样找了很多的解决方案，最终这2个比较靠谱的：
+- 手动执行unmap方法
+```
+// 在关闭资源时执行以下代码释放内存
+Method m = FileChannelImpl.class.getDeclaredMethod("unmap", MappedByteBuffer.class);
+m.setAccessible(true);
+m.invoke(FileChannelImpl.class, buffer);
+```
+
+- 让MappedByteBuffer自己释放本身持有的内存
+```
+AccessController.doPrivileged(new PrivilegedAction() {
+    public Object run() {
+      try {
+        Method getCleanerMethod = buffer.getClass().getMethod("cleaner", new Class[0]);
+        getCleanerMethod.setAccessible(true);
+        sun.misc.Cleaner cleaner = (sun.misc.Cleaner)
+        getCleanerMethod.invoke(byteBuffer, new Object[0]);
+        cleaner.clean();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      return null;
+    }
+});
+```
+
+实际上面两个方法都调用了Cleaner类的clean方法释放，参考unmap代码
+```
+private static void unmap(MappedByteBuffer bb) {
+    Cleaner cl = ((DirectBuffer)bb).cleaner();
+    if (cl != null)
+        cl.clean();
+}
+```
+
+问题是解决了。但是可以看到第二个方法中，使用了AccessController，这个又是一个新的东西，我们下一期来再来研究看看这个到底是什么。
