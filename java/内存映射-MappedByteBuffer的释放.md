@@ -81,4 +81,8 @@ private static void unmap(MappedByteBuffer bb) {
 }
 ```
 
+其实讲到这里该问题的解决办法已然清晰明了了。就是在删除索引文件的同时还取消对应的内存映射，删除mapped对象。 不过令人遗憾的是，Java并没有特别好的解决方案——令人有些惊讶的是，Java没有为MappedByteBuffer提供unmap的方法， 该方法甚至要等到Java 10才会被引入 ,DirectByteBufferR类是不是一个公有类  class DirectByteBufferR extends DirectByteBuffer implements DirectBuffer 使用默认访问修饰符 不过Java倒是提供了内部的“临时”解决方案——DirectByteBufferR.cleaner().clean() 切记这只是临时方法，毕竟该类在Java9中就正式被隐藏了，而且也不是所有JVM厂商都有这个类。 还有一个解决办法就是显式调用System.gc()，让gc赶在cache失效前就进行回收。 不过坦率地说，这个方法弊端更多：首先显式调用GC是强烈不被推荐使用的， 其次很多生产环境甚至禁用了显式GC调用，所以这个办法最终没有被当做这个bug的解决方案。 
+
+
+
 问题是解决了。但是可以看到第二个方法中，使用了AccessController，这个又是一个新的东西，我们下一期来再来研究看看这个到底是什么。
