@@ -431,7 +431,4 @@ public void updateCursor(ClientIdentity clientIdentity, Position position) throw
     // 加到队列中，由定时任务触发写入zk
     updateCursorTasks.add(clientIdentity);// 添加到任务队列中进行触发
 }
-
 ```
-
-在这里
